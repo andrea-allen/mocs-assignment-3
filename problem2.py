@@ -5,20 +5,31 @@ import networkx as nx
 import numpy as np
 
 def run_model():
-    SIS_euler(100, 0, 0, .025, 10)
+    I, S = SIS_euler(100, 1, .3, .01, 10)
+
+    for i in range(len(I)):
+        plt.plot(np.arange(len(I[0])), I[i])
+    plt.show()
+    for t in range(len(I[0])):
+        plt.scatter(t, np.sum(I[:,t]))
+        plt.scatter(t, np.sum(S[:,t]))
+    plt.show()
 
 def generate_random_degree_distribution(N, p):
+    # Degree distribution for an Erdos Renyi graph
     G = nx.erdos_renyi_graph(N, p)
     hist = nx.degree_histogram(G)
     plt.plot(hist)
     plt.show()
     return hist/(np.sum(hist))
 
-def SIS_euler(N, gamma, beta, step_size_h, steps=50):
-    beta=.2
-    alpha=.08
+def generate_geometric_dist(p, size):
+    # Geometric distribution
+    return np.random.geometric(p, size)
+
+def SIS_euler(N, alpha, beta, step_size_h, steps=50):
     #Degree distribution
-    P_k = generate_random_degree_distribution(N, .01)
+    P_k = generate_geometric_dist(.25, 10)
     S_current = np.zeros(len(P_k))
     I_current = np.ones(len(P_k))
     for i in range(len(S_current)):
@@ -37,12 +48,4 @@ def SIS_euler(N, gamma, beta, step_size_h, steps=50):
         I_current = I[:, t]
         time += step_size_h
         time_vec.append(time)
-
-    for i in range(len(I)):
-        plt.plot(np.arange(len(I[0])), I[i])
-    plt.show()
-    for t in range(len(I[0])):
-        plt.scatter(t, np.sum(I[:,t]))
-        plt.scatter(t, np.sum(S[:,t]))
-    plt.show()
-    return 0
+    return I, S
