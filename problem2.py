@@ -6,8 +6,8 @@ import numpy as np
 import random
 
 def run_model():
-    # I, S = SIS_euler(100, 1, .9, .01, 50)
-    I, S = SIS_euler_with_vacc(100, 1, .3, .01, 1, 10)
+    I, S = SIS_euler(100, 1, .3, .01, 10)
+    # I, S = SIS_euler_with_vacc(100, 1, .3, .01, 1, 10)
     for i in range(len(I)):
         plt.plot(np.arange(len(I[0])), I[i])
     plt.show()
@@ -50,7 +50,7 @@ def SIS_euler(N, alpha, beta, step_size_h, steps=10):
     for t in range(1, math.floor(steps / step_size_h)):
         for k in range(len(P_k)):
             theta = integrators.get_theta(P_k, I_current)
-            next_I_k = integrators.euler(step_size_h, I_current[k], N_k[k], k+1, P_k[k], beta/alpha, theta)
+            next_I_k = integrators.euler(step_size_h, I_current[k], N_k[k], k, P_k[k], beta/alpha, theta)
             I[k][t] = next_I_k
             S[k][t] = (N_k[k] - next_I_k)
         S_current = S[:, t]
@@ -93,8 +93,8 @@ def SIS_euler_with_vacc(N, alpha, beta, step_size_h, rho, steps=50):
     for t in range(1, math.floor(steps / step_size_h)):
         for k in range(len(P_k)):
             theta = integrators.get_theta(P_k, I_current)
-            next_I_k = integrators.euler(step_size_h, I_current[2*k], N_k[2*k], k+1, P_k[k], beta/alpha, theta) #should be N for the compartment, N_k or N_k_v
-            next_I_k_v = integrators.euler(step_size_h, I_current[2*k+1], N_k[2*k+1], k+1, P_k[k], rho*beta/alpha, theta)
+            next_I_k = integrators.euler(step_size_h, I_current[2*k], N_k[2*k], k, P_k[k], beta/alpha, theta) #should be N for the compartment, N_k or N_k_v
+            next_I_k_v = integrators.euler(step_size_h, I_current[2*k+1], N_k[2*k+1], k, P_k[k], rho*beta/alpha, theta)
             I[2*k][t] = next_I_k
             I[2*k+1][t] = next_I_k_v
             # S[2*k][t] = (N*P_k[k] - next_I_k) #to fix: total nodes
