@@ -9,14 +9,28 @@ def run_model():
     # I = SIS_euler(200, 1, .9, .01, 1000)
     #somewhere between .3 and .5
     #.375 .35, .4 went down and then went up
-    I = SIS_euler_with_vacc_top40(200, 1, .3, .01, .2, 500)
-    for i in range(len(I)):
-        plt.plot(np.arange(len(I[0])), I[i])
-    plt.show()
+    I_8 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .8, 1000)
+    I_5 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .5, 1000)
+    I_4 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .4, 1000)
+    I_3 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .3, 1000)
+    I_2 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .2, 1000)
+    # I = SIS_euler_with_vacc_top40(200, 1, .3, .01, .2, 500)
+    # for i in range(len(I)):
+    #     plt.plot(np.arange(len(I[0])), I[i])
+    # plt.show()
     total_infected_time_series = []
-    for t in range(len(I[0])):
-        total_infected_time_series.append(np.sum(I[:,t]))
-    plt.plot(total_infected_time_series)
+    results_lists = [I_8, I_5, I_4, I_3, I_2]
+    labels = ['$\\rho=0.8$', '$\\rho=0.5$', '$\\rho=0.4$', '$\\rho=0.3$', '$\\rho=0.2$']
+    idx = 0
+    for I in results_lists:
+        for t in range(len(I[0])):
+            total_infected_time_series.append(np.sum(I[:,t]))
+        plt.plot(np.arange(len(I[0])), np.array(total_infected_time_series)/200, label=labels[idx])
+        idx+=1
+        total_infected_time_series = []
+    plt.legend(loc='upper left')
+    plt.xlabel('Time')
+    plt.ylabel('Total fraction of nodes infected')
     plt.show()
 
 def generate_random_degree_distribution(N, p):
@@ -87,7 +101,7 @@ def SIS_euler_with_vacc(N, alpha, beta, step_size_h, rho, steps=50):
     I = np.zeros((2*len(P_k), math.floor(steps / step_size_h)))
     time = 0
     time_vec = [0]
-    for t in range(1, math.floor(steps / step_size_h)):
+    for t in range(0, math.floor(steps / step_size_h)):
         for k in range(len(P_k)):
             theta = integrators.get_theta(P_k, N_k, I_current)
             next_I_k = integrators.euler(step_size_h, I_current[2*k], N_k[2*k], k, P_k[k], beta/alpha, theta) #should be N for the compartment, N_k or N_k_v
@@ -124,7 +138,7 @@ def SIS_euler_with_vacc_top40(N, alpha, beta, step_size_h, rho, steps=50):
     I = np.zeros((2*len(P_k), math.floor(steps / step_size_h)))
     time = 0
     time_vec = [0]
-    for t in range(1, math.floor(steps / step_size_h)):
+    for t in range(0, math.floor(steps / step_size_h)):
         for k in range(len(P_k)):
             theta = integrators.get_theta(P_k, N_k, I_current)
             next_I_k = integrators.euler(step_size_h, I_current[2*k], N_k[2*k], k, P_k[k], beta/alpha, theta) #should be N for the compartment, N_k or N_k_v
