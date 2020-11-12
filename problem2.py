@@ -6,26 +6,21 @@ import numpy as np
 import random
 
 def run_model():
-    # I = SIS_euler(200, 1, .9, .01, 1000)
-    #somewhere between .3 and .5
-    #.375 .35, .4 went down and then went up
-    I_8 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .8, 1000)
-    I_5 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .5, 1000)
-    I_4 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .4, 1000)
-    I_3 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .3, 1000)
-    I_2 = SIS_euler_with_vacc_top40(200, 1, .3, .01, .2, 1000)
-    # I = SIS_euler_with_vacc_top40(200, 1, .3, .01, .2, 500)
-    # for i in range(len(I)):
-    #     plt.plot(np.arange(len(I[0])), I[i])
-    # plt.show()
+    I_1 = SIS_euler_with_vacc_random40(500, 1, .3, .01, 1, 30)
+    I_8 = SIS_euler_with_vacc_random40(500, 1, .3, .01, .8, 30)
+    I_5 = SIS_euler_with_vacc_random40(500, 1, .3, .01, .5, 30)
+    I_4 = SIS_euler_with_vacc_random40(500, 1, .3, .01, .4, 30)
+    I_3 = SIS_euler_with_vacc_random40(500, 1, .3, .01, .3, 30)
+    I_2 = SIS_euler_with_vacc_random40(500, 1, .3, .01, .2, 30)
+
     total_infected_time_series = []
-    results_lists = [I_8, I_5, I_4, I_3, I_2]
-    labels = ['$\\rho=0.8$', '$\\rho=0.5$', '$\\rho=0.4$', '$\\rho=0.3$', '$\\rho=0.2$']
+    results_lists = [I_1, I_8, I_5, I_4, I_3, I_2]
+    labels = ['$\\rho=1.0$', '$\\rho=0.8$', '$\\rho=0.5$', '$\\rho=0.4$', '$\\rho=0.3$', '$\\rho=0.2$']
     idx = 0
     for I in results_lists:
         for t in range(len(I[0])):
             total_infected_time_series.append(np.sum(I[:,t]))
-        plt.plot(np.arange(len(I[0])), np.array(total_infected_time_series)/200, label=labels[idx])
+        plt.plot(np.arange(len(I[0])), np.array(total_infected_time_series), label=labels[idx])
         idx+=1
         total_infected_time_series = []
     plt.legend(loc='upper left')
@@ -73,46 +68,6 @@ def SIS_euler(N, alpha, beta, step_size_h, steps=10):
         time_vec.append(time)
     return I
 
-def SIS_euler_with_vacc(N, alpha, beta, step_size_h, rho, steps=50):
-    #Degree distribution
-    P_k = generate_geometric_dist(.25, 10)
-    P_k = P_k/np.sum(P_k)
-    N_k = np.zeros(2*len(P_k)+1)
-    random_40 = random.sample(list(np.arange(N)), int(.4*N))
-    for k in range(len(P_k)):
-        N_k[2*k] = P_k[k]*N
-        N_k[2*k+1] = 0
-    labels = np.arange(N)
-    random.shuffle(labels)
-    idx = 0
-    for k in range(len(P_k)):
-        Nk = int(math.floor(N_k[2*k]))
-        label_set = labels[idx:idx+Nk]
-        vacc_set = 0
-        for i in label_set:
-            if i in random_40:
-                vacc_set+=1
-        N_k[2*k+1] = vacc_set
-        N_k[2*k] = Nk-vacc_set
-        idx+=Nk
-
-    I_current = np.ones(2*len(P_k))
-
-    I = np.zeros((2*len(P_k), math.floor(steps / step_size_h)))
-    time = 0
-    time_vec = [0]
-    for t in range(0, math.floor(steps / step_size_h)):
-        for k in range(len(P_k)):
-            theta = integrators.get_theta(P_k, N_k, I_current)
-            next_I_k = integrators.euler(step_size_h, I_current[2*k], N_k[2*k], k, P_k[k], beta/alpha, theta) #should be N for the compartment, N_k or N_k_v
-            next_I_k_v = integrators.euler(step_size_h, I_current[2*k+1], N_k[2*k+1], k, P_k[k], rho*beta/alpha, theta)
-            I[2*k][t] = next_I_k
-            I[2*k+1][t] = next_I_k_v
-        I_current = I[:, t]
-        time += step_size_h
-        time_vec.append(time)
-    return I
-
 def SIS_euler_with_vacc_top40(N, alpha, beta, step_size_h, rho, steps=50):
     #Degree distribution
     P_k = generate_geometric_dist(.25, 10)
@@ -134,17 +89,63 @@ def SIS_euler_with_vacc_top40(N, alpha, beta, step_size_h, rho, steps=50):
         N_k[2*k+1] = vacc_set
         N_k[2*k] = Nk-vacc_set
         idx+=Nk
-    I_current = np.ones(2*len(P_k))
+    new_p_k = np.zeros(2*len(P_k))
+    for n in range(len(N_k)-1):
+        new_p_k[n] = N_k[n]/np.sum(N_k)
+    I_current = np.ones(2*len(P_k))/N
     I = np.zeros((2*len(P_k), math.floor(steps / step_size_h)))
     time = 0
     time_vec = [0]
     for t in range(0, math.floor(steps / step_size_h)):
         for k in range(len(P_k)):
-            theta = integrators.get_theta(P_k, N_k, I_current)
-            next_I_k = integrators.euler(step_size_h, I_current[2*k], N_k[2*k], k, P_k[k], beta/alpha, theta) #should be N for the compartment, N_k or N_k_v
-            next_I_k_v = integrators.euler(step_size_h, I_current[2*k+1], N_k[2*k+1], k, P_k[k], rho*beta/alpha, theta)
-            I[2*k][t] = next_I_k
-            I[2*k+1][t] = next_I_k_v
+            degree = k
+            theta = integrators.get_theta(P_k, new_p_k, I_current)
+            next_I_k = integrators.euler(step_size_h, I_current[2*degree], degree, new_p_k[2*degree], beta/alpha, theta) #should be N for the compartment, N_k or N_k_v
+            next_I_k_v = integrators.euler(step_size_h, I_current[2*degree+1], degree, new_p_k[2*degree+1], rho*beta/alpha, theta)
+            I[2*degree][t] = next_I_k
+            I[2*degree+1][t] = next_I_k_v
+        I_current = I[:, t]
+        time += step_size_h
+        time_vec.append(time)
+    return I
+
+def SIS_euler_with_vacc_random40(N, alpha, beta, step_size_h, rho, steps=50):
+    #Degree distribution
+    P_k = generate_geometric_dist(.25, 10)
+    P_k = P_k/np.sum(P_k)
+    N_k = np.zeros(2*len(P_k)+1)
+    random_40 = random.sample(list(np.arange(N)), int(.4*N))
+    for k in range(len(P_k)):
+        N_k[2*k] = P_k[k]*N
+        N_k[2*k+1] = 0
+    labels = np.arange(N)
+    random.shuffle(labels)
+    idx = 0
+    for k in range(len(P_k)-1, -1, -1):
+        Nk = int(math.floor(N_k[2*k]))
+        label_set = labels[idx:idx+Nk]
+        vacc_set = 0
+        for i in label_set:
+            if i in random_40:
+                vacc_set+=1
+        N_k[2*k+1] = vacc_set
+        N_k[2*k] = Nk-vacc_set
+        idx+=Nk
+    new_p_k = np.zeros(2*len(P_k))
+    for n in range(len(N_k)-1):
+        new_p_k[n] = N_k[n]/np.sum(N_k)
+    I_current = np.ones(2*len(P_k))/N
+    I = np.zeros((2*len(P_k), math.floor(steps / step_size_h)))
+    time = 0
+    time_vec = [0]
+    for t in range(0, math.floor(steps / step_size_h)):
+        for k in range(len(P_k)):
+            degree = k
+            theta = integrators.get_theta(P_k, new_p_k, I_current)
+            next_I_k = integrators.euler(step_size_h, I_current[2*degree], degree, new_p_k[2*degree], beta/alpha, theta) #should be N for the compartment, N_k or N_k_v
+            next_I_k_v = integrators.euler(step_size_h, I_current[2*degree+1], degree, new_p_k[2*degree+1], rho*beta/alpha, theta)
+            I[2*degree][t] = next_I_k
+            I[2*degree+1][t] = next_I_k_v
         I_current = I[:, t]
         time += step_size_h
         time_vec.append(time)
